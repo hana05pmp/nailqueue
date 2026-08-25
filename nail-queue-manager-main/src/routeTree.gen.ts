@@ -10,8 +10,10 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BookingRouteImport } from './routes/booking'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as JoinRouteImport } from './routes/join'
+import { Route as MyBookingsRouteImport } from './routes/my-bookings'
 import { Route as MyQueueRouteImport } from './routes/my-queue'
 import { Route as ServicesRouteImport } from './routes/services'
 import { Route as StaffAnalyticsRouteImport } from './routes/staff/analytics'
@@ -24,6 +26,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BookingRoute = BookingRouteImport.update({
+  id: '/booking',
+  path: '/booking',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HistoryRoute = HistoryRouteImport.update({
   id: '/history',
   path: '/history',
@@ -32,6 +39,11 @@ const HistoryRoute = HistoryRouteImport.update({
 const JoinRoute = JoinRouteImport.update({
   id: '/join',
   path: '/join',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MyBookingsRoute = MyBookingsRouteImport.update({
+  id: '/my-bookings',
+  path: '/my-bookings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MyQueueRoute = MyQueueRouteImport.update({
@@ -67,8 +79,10 @@ const StaffServicesRoute = StaffServicesRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/booking': typeof BookingRoute
   '/history': typeof HistoryRoute
   '/join': typeof JoinRoute
+  '/my-bookings': typeof MyBookingsRoute
   '/my-queue': typeof MyQueueRoute
   '/services': typeof ServicesRoute
   '/staff/analytics': typeof StaffAnalyticsRoute
@@ -78,8 +92,10 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/booking': typeof BookingRoute
   '/history': typeof HistoryRoute
   '/join': typeof JoinRoute
+  '/my-bookings': typeof MyBookingsRoute
   '/my-queue': typeof MyQueueRoute
   '/services': typeof ServicesRoute
   '/staff/analytics': typeof StaffAnalyticsRoute
@@ -90,8 +106,10 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/booking': typeof BookingRoute
   '/history': typeof HistoryRoute
   '/join': typeof JoinRoute
+  '/my-bookings': typeof MyBookingsRoute
   '/my-queue': typeof MyQueueRoute
   '/services': typeof ServicesRoute
   '/staff/analytics': typeof StaffAnalyticsRoute
@@ -103,8 +121,10 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/booking'
     | '/history'
     | '/join'
+    | '/my-bookings'
     | '/my-queue'
     | '/services'
     | '/staff/analytics'
@@ -114,8 +134,10 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/booking'
     | '/history'
     | '/join'
+    | '/my-bookings'
     | '/my-queue'
     | '/services'
     | '/staff/analytics'
@@ -125,8 +147,10 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/booking'
     | '/history'
     | '/join'
+    | '/my-bookings'
     | '/my-queue'
     | '/services'
     | '/staff/analytics'
@@ -137,8 +161,10 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BookingRoute: typeof BookingRoute
   HistoryRoute: typeof HistoryRoute
   JoinRoute: typeof JoinRoute
+  MyBookingsRoute: typeof MyBookingsRoute
   MyQueueRoute: typeof MyQueueRoute
   ServicesRoute: typeof ServicesRoute
   StaffAnalyticsRoute: typeof StaffAnalyticsRoute
@@ -156,6 +182,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/booking': {
+      id: '/booking'
+      path: '/booking'
+      fullPath: '/booking'
+      preLoaderRoute: typeof BookingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/history': {
       id: '/history'
       path: '/history'
@@ -168,6 +201,13 @@ declare module '@tanstack/react-router' {
       path: '/join'
       fullPath: '/join'
       preLoaderRoute: typeof JoinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/my-bookings': {
+      id: '/my-bookings'
+      path: '/my-bookings'
+      fullPath: '/my-bookings'
+      preLoaderRoute: typeof MyBookingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/my-queue': {
@@ -217,8 +257,10 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BookingRoute: BookingRoute,
   HistoryRoute: HistoryRoute,
   JoinRoute: JoinRoute,
+  MyBookingsRoute: MyBookingsRoute,
   MyQueueRoute: MyQueueRoute,
   ServicesRoute: ServicesRoute,
   StaffAnalyticsRoute: StaffAnalyticsRoute,

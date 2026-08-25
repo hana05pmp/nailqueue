@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { createSeedState } from "./seed";
-import type { SalonState, Service, Ticket, TicketStatus } from "./types";
+import type { Booking, BookingStatus, SalonState, Service, Ticket, TicketStatus } from "./types";
+import { addMinutesToTime, generateTimeSlots, timeToMinutes, timesOverlap, SALON_HOURS } from "@/lib/utils";
 
 const STORAGE_KEY = "nail-salon-queue-v1";
 const serverState: SalonState = createSeedState(0);
@@ -20,7 +21,15 @@ function hydrate() {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<SalonState>;
-      state = { ...createSeedState(), ...parsed, staffLoggedIn: false };
+      const base = createSeedState();
+      state = {
+        ...base,
+        ...parsed,
+        staffLoggedIn: false,
+        bookings: parsed.bookings ?? base.bookings,
+        bookingCounter: parsed.bookingCounter ?? base.bookingCounter,
+        myBookingIds: parsed.myBookingIds ?? base.myBookingIds,
+      };
     } else { state = createSeedState(); persist(); }
   } catch { state = createSeedState(); }
   emit();
@@ -67,3 +76,116 @@ export function serviceName(s: SalonState, id: string) { return s.services.find(
 export function serviceDuration(s: SalonState, id: string) { return s.services.find((svc) => svc.id === id)?.durationMin ?? 30; }
 export function positionOf(s: SalonState, ticket: Ticket) { const list = waitingTickets(s); const idx = list.findIndex((t) => t.id === ticket.id); return idx === -1 ? 0 : idx + 1; }
 export function estimatedWaitMin(s: SalonState, ticket: Ticket) { const ahead = waitingTickets(s).filter((t) => t.joinedAt < ticket.joinedAt); const aheadMin = ahead.reduce((sum, t) => sum + serviceDuration(s, t.serviceId), 0); const serving = nowServing(s); let remaining = 0; if (serving) { const elapsed = (Date.now() - (serving.startedAt ?? Date.now())) / 60000; remaining = Math.max(0, serviceDuration(s, serving.serviceId) - elapsed); } return Math.round(aheadMin + remaining); }
+
+export function bookingsForDate(s: SalonState, date: string) {
+  return s.bookings.filter((b) => b.date === date && b.status !== "cancelled");
+}
+
+export function isSlotOccupied(
+  s: SalonState,
+  date: string,
+  startTime: string,
+  durationMin: number,
+  ignoreBookingId?: string,
+): boolean {
+  const existing = bookingsForDate(s, date).filter((b) => b.id !== ignoreBookingId);
+  return existing.some((b) => timesOverlap(startTime, durationMin, b.startTime, b.durationMin));
+}
+
+export function slotEndTime(startTime: string, durationMin: number): string {
+  return addMinutesToTime(startTime, durationMin);
+}
+
+export function getAvailableSlots(s: SalonState, date: string, durationMin: number): string[] {
+  const slots = generateTimeSlots();
+  return slots.filter((slot) => {
+    const slotStart = timeToMinutes(slot);
+    const slotEnd = slotStart + durationMin;
+    const closeMin = SALON_HOURS.close * 60;
+    if (slotEnd > closeMin) return false;
+    return !isSlotOccupied(s, date, slot, durationMin);
+  });
+}
+
+export function getOccupiedSlots(s: SalonState, date: string, durationMin: number): string[] {
+  const slots = generateTimeSlots();
+  return slots.filter((slot) => {
+    const slotStart = timeToMinutes(slot);
+    const slotEnd = slotStart + durationMin;
+    const closeMin = SALON_HOURS.close * 60;
+    if (slotEnd > closeMin) return false;
+    return isSlotOccupied(s, date, slot, durationMin);
+  });
+}
+
+export interface CreateBookingInput {
+  customerName: string;
+  serviceId: string;
+  date: string;
+  startTime: string;
+}
+
+export function createBooking(input: CreateBookingInput): { ok: true; booking: Booking } | { ok: false; error: string } {
+  const svc = state.services.find((s) => s.id === input.serviceId);
+  if (!svc) return { ok: false, error: "Please choose a service" };
+  if (!input.customerName.trim()) return { ok: false, error: "Please enter your name" };
+  if (!input.date) return { ok: false, error: "Please select a date" };
+  if (!input.startTime) return { ok: false, error: "Please select a time" };
+
+  if (isSlotOccupied(state, input.date, input.startTime, svc.durationMin)) {
+    return { ok: false, error: "Sorry, this time slot has just been booked. Please choose another time." };
+  }
+
+  const endTime = addMinutesToTime(input.startTime, svc.durationMin);
+  const bookingNumber = state.bookingCounter + 1;
+  const booking: Booking = {
+    id: uid(),
+    bookingNumber,
+    customerName: input.customerName.trim(),
+    serviceId: input.serviceId,
+    serviceName: svc.name,
+    date: input.date,
+    startTime: input.startTime,
+    endTime,
+    durationMin: svc.durationMin,
+    status: "confirmed",
+    createdAt: Date.now(),
+  };
+
+  setState((prev) => ({
+    ...prev,
+    bookingCounter: bookingNumber,
+    bookings: [...prev.bookings, booking],
+    myBookingIds: [...prev.myBookingIds, booking.id],
+  }));
+
+  return { ok: true, booking };
+}
+
+export function cancelBooking(id: string) {
+  updateBooking(id, { status: "cancelled", endedAt: Date.now() });
+}
+
+function updateBooking(id: string, patch: Partial<Booking>) {
+  setState((prev) => ({ ...prev, bookings: prev.bookings.map((b) => b.id === id ? { ...b, ...patch } : b) }));
+}
+
+export function checkInBooking(id: string) {
+  updateBooking(id, { status: "waiting", checkedInAt: Date.now() });
+}
+
+export function startBookingService(id: string) {
+  updateBooking(id, { status: "serving", startedAt: Date.now() });
+}
+
+export function completeBookingService(id: string) {
+  updateBooking(id, { status: "completed", endedAt: Date.now() });
+}
+
+export function myBookings(s: SalonState): Booking[] {
+  return s.bookings
+    .filter((b) => s.myBookingIds.includes(b.id))
+    .sort((a, b) => a.createdAt - b.createdAt);
+}
+
+export const BOOKING_STATUSES: BookingStatus[] = ["confirmed", "waiting", "serving", "completed", "cancelled"];

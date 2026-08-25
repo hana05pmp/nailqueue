@@ -15,6 +15,7 @@ import {
   waitingTickets,
 } from "@/lib/salon/store";
 import { ACTIVE_STATUSES } from "@/lib/salon/types";
+import { formatDuration } from "@/lib/utils";
 
 export const Route = createFileRoute("/my-queue")({
   head: () => ({
@@ -120,7 +121,7 @@ function MyQueuePage() {
                         <Clock className="size-3" /> Wait
                       </p>
                       <p className="font-display text-2xl font-semibold">
-                        {ticket.status === "waiting" ? `${estimatedWaitMin(state, ticket)}m` : "Now"}
+                        {ticket.status === "waiting" ? formatDuration(estimatedWaitMin(state, ticket)) : "Now"}
                       </p>
                     </div>
                   </div>

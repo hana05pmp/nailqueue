@@ -7,8 +7,10 @@ import { staffLogout, useSalon } from "@/lib/salon/store";
 
 const customerLinks = [
   { to: "/", label: "Home" },
+  { to: "/booking", label: "Booking" },
   { to: "/join", label: "Join Queue" },
   { to: "/my-queue", label: "My Queue" },
+  { to: "/my-bookings", label: "My Bookings" },
   { to: "/history", label: "History" },
 ] as const;
 

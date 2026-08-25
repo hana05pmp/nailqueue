@@ -4,6 +4,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageShell } from "@/components/salon/PageShell";
 import { useSalon } from "@/lib/salon/store";
+import { formatDuration } from "@/lib/utils";
 
 export const Route = createFileRoute("/services")({
   head: () => ({
@@ -49,7 +50,7 @@ function ServicesPage() {
               </div>
               <p className="mt-2 flex-1 text-sm text-muted-foreground">{svc.description}</p>
               <p className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
-                <Clock className="size-3.5" /> about {svc.durationMin} minutes
+                <Clock className="size-3.5" /> about {formatDuration(svc.durationMin)}
               </p>
               <Link
                 to="/join"

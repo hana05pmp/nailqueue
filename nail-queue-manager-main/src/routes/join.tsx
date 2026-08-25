@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageShell } from "@/components/salon/PageShell";
 import { joinQueue, nowServing, useSalonState, waitingTickets } from "@/lib/salon/store";
+import { formatDuration } from "@/lib/utils";
 
 const searchSchema = z.object({ service: z.string().optional() });
 
@@ -108,7 +109,7 @@ function JoinPage() {
                           <span className="text-sm text-primary">${svc.price}</span>
                         </span>
                         <span className="mt-1 block text-xs text-muted-foreground">
-                          {svc.durationMin} min
+                          {formatDuration(svc.durationMin)}
                         </span>
                       </button>
                     );
@@ -133,12 +134,12 @@ function JoinPage() {
               </div>
               <div className="flex items-center justify-between">
                 <dt className="text-muted-foreground">Estimated wait</dt>
-                <dd className="font-display text-xl font-semibold">{estimate} min</dd>
+                <dd className="font-display text-xl font-semibold">{formatDuration(estimate)}</dd>
               </div>
               {chosen && (
                 <div className="flex items-center justify-between">
                   <dt className="text-muted-foreground">Your service time</dt>
-                  <dd className="font-display text-xl font-semibold">{chosen.durationMin} min</dd>
+                  <dd className="font-display text-xl font-semibold">{formatDuration(chosen.durationMin)}</dd>
                 </div>
               )}
             </dl>

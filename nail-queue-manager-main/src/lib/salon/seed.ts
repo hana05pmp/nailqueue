@@ -1,4 +1,4 @@
-import type { SalonState, Service, Ticket } from "./types";
+import type { Booking, SalonState, Service, Ticket } from "./types";
 
 export const SERVICE_SEED: Service[] = [
   {
@@ -109,11 +109,81 @@ function buildSeedTickets(now: number): Ticket[] {
 }
 
 export function createSeedState(now = Date.now()): SalonState {
+  const today = new Date(now);
+  const y = today.getFullYear();
+  const m = String(today.getMonth() + 1).padStart(2, "0");
+  const d = String(today.getDate()).padStart(2, "0");
+  const todayStr = `${y}-${m}-${d}`;
+  const tomorrow = new Date(now + 86400000);
+  const ty = tomorrow.getFullYear();
+  const tm = String(tomorrow.getMonth() + 1).padStart(2, "0");
+  const td = String(tomorrow.getDate()).padStart(2, "0");
+  const tomorrowStr = `${ty}-${tm}-${td}`;
+
+  const seedBookings: Booking[] = [
+    {
+      id: "seed-booking-1",
+      bookingNumber: 5001,
+      customerName: "Ava Thompson",
+      serviceId: "svc-gel-mani",
+      serviceName: "Gel Manicure",
+      date: todayStr,
+      startTime: "10:00",
+      endTime: "10:45",
+      durationMin: 45,
+      status: "confirmed",
+      createdAt: now - 86400000,
+    },
+    {
+      id: "seed-booking-2",
+      bookingNumber: 5002,
+      customerName: "Mia Patel",
+      serviceId: "svc-pedicure",
+      serviceName: "Spa Pedicure",
+      date: todayStr,
+      startTime: "11:00",
+      endTime: "11:50",
+      durationMin: 50,
+      status: "waiting",
+      createdAt: now - 172800000,
+      checkedInAt: now - 600000,
+    },
+    {
+      id: "seed-booking-3",
+      bookingNumber: 5003,
+      customerName: "Luna Garcia",
+      serviceId: "svc-acrylic",
+      serviceName: "Acrylic Full Set",
+      date: tomorrowStr,
+      startTime: "13:00",
+      endTime: "14:15",
+      durationMin: 75,
+      status: "confirmed",
+      createdAt: now - 259200000,
+    },
+    {
+      id: "seed-booking-4",
+      bookingNumber: 5004,
+      customerName: "Nora Wright",
+      serviceId: "svc-classic-mani",
+      serviceName: "Classic Manicure",
+      date: tomorrowStr,
+      startTime: "14:30",
+      endTime: "15:00",
+      durationMin: 30,
+      status: "confirmed",
+      createdAt: now - 345600000,
+    },
+  ];
+
   return {
     services: SERVICE_SEED,
     tickets: buildSeedTickets(now),
     counter: 110,
     myTicketIds: [],
     staffLoggedIn: false,
+    bookings: seedBookings,
+    bookingCounter: 5004,
+    myBookingIds: [],
   };
 }
