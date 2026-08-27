@@ -45,7 +45,7 @@ function ServicesPage() {
               <div className="flex items-start justify-between gap-3">
                 <h2 className="text-lg font-semibold">{svc.name}</h2>
                 <span className="font-display text-lg font-semibold text-primary">
-                  ${svc.price}
+                  {(svc.price * 1000).toLocaleString()} Ks
                 </span>
               </div>
               <p className="mt-2 flex-1 text-sm text-muted-foreground">{svc.description}</p>
