@@ -106,7 +106,7 @@ function JoinPage() {
                       >
                         <span className="flex items-center justify-between gap-2">
                           <span className="font-medium">{svc.name}</span>
-                          <span className="text-sm text-primary">${svc.price}</span>
+                          <span className="text-sm text-primary">{(svc.price * 1000).toLocaleString()} Ks</span>
                         </span>
                         <span className="mt-1 block text-xs text-muted-foreground">
                           {formatDuration(svc.durationMin)}
