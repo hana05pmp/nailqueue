@@ -9,13 +9,13 @@ import { formatDuration } from "@/lib/utils";
 export const Route = createFileRoute("/services")({
   head: () => ({
     meta: [
-      { title: "Nail Services & Prices — Lacquer Lane" },
+      { title: "Nail Services & Prices — The Nail Room" },
       {
         name: "description",
         content:
-          "Manicures, pedicures, acrylic sets and nail art at Lacquer Lane, with durations and prices.",
+          "Manicures, pedicures, acrylic sets and nail art at The Nail Room, with durations and prices.",
       },
-      { property: "og:title", content: "Nail Services & Prices — Lacquer Lane" },
+      { property: "og:title", content: "Nail Services & Prices — The Nail Room" },
       {
         property: "og:description",
         content: "See every nail service we offer with duration and pricing.",

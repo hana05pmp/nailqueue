@@ -16,13 +16,13 @@ export const Route = createFileRoute("/join")({
   validateSearch: searchSchema,
   head: () => ({
     meta: [
-      { title: "Join the Queue — Lacquer Lane" },
+      { title: "Join the Queue — The Nail Room" },
       {
         name: "description",
         content:
           "Pick a nail service, enter your name and get a queue ticket with a live wait estimate.",
       },
-      { property: "og:title", content: "Join the Queue — Lacquer Lane" },
+      { property: "og:title", content: "Join the Queue — The Nail Room" },
       {
         property: "og:description",
         content: "Get a digital nail salon ticket in seconds.",

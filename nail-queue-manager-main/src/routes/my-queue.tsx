@@ -20,13 +20,13 @@ import { formatDuration } from "@/lib/utils";
 export const Route = createFileRoute("/my-queue")({
   head: () => ({
     meta: [
-      { title: "My Queue Ticket — Lacquer Lane" },
+      { title: "My Queue Ticket — The Nail Room" },
       {
         name: "description",
         content:
           "Track your nail salon ticket: queue position, customers ahead and estimated waiting time.",
       },
-      { property: "og:title", content: "My Queue Ticket — Lacquer Lane" },
+      { property: "og:title", content: "My Queue Ticket — The Nail Room" },
       {
         property: "og:description",
         content: "Live position, customers ahead and estimated wait for your ticket.",

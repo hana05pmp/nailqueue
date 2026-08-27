@@ -36,7 +36,7 @@ export function SiteHeader() {
           <span className="flex size-9 items-center justify-center rounded-full bg-gradient-primary text-primary-foreground">
             <Sparkles className="size-4" />
           </span>
-          <span className="font-display text-lg font-semibold tracking-tight">Lacquer Lane</span>
+          <span className="font-display text-lg font-semibold tracking-tight">The Nail Room</span>
         </Link>
 
         <nav className="hidden items-center gap-1 lg:flex">

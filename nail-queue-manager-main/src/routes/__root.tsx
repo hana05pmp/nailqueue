@@ -80,7 +80,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lacquer Lane — Nail Salon Queue" },
+      { title: "The Nail Room — Nail Salon Queue" },
       {
         name: "description",
         content: "Join the nail salon queue, track your position and manage service flow.",
@@ -135,10 +135,7 @@ function RootComponent() {
         </main>
         <footer className="border-t border-border/70 bg-secondary/40">
           <div className="mx-auto w-full max-w-6xl px-4 py-8 text-sm text-muted-foreground sm:px-6">
-            <p className="font-display text-base font-semibold text-foreground">Lacquer Lane</p>
-            <p className="mt-1">
-              Queue management demo — all data is stored locally in your browser.
-            </p>
+            <p className="font-display text-base font-semibold text-foreground">The Nail Room</p>
           </div>
         </footer>
       </div>

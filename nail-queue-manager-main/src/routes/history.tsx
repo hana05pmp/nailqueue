@@ -17,12 +17,12 @@ import { ACTIVE_STATUSES } from "@/lib/salon/types";
 export const Route = createFileRoute("/history")({
   head: () => ({
     meta: [
-      { title: "Queue History — Lacquer Lane" },
+      { title: "Queue History — The Nail Room" },
       {
         name: "description",
         content: "Review your completed and cancelled nail salon queue tickets.",
       },
-      { property: "og:title", content: "Queue History — Lacquer Lane" },
+      { property: "og:title", content: "Queue History — The Nail Room" },
       {
         property: "og:description",
         content: "Every past ticket with service, status and timings.",

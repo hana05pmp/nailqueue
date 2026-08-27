@@ -8,7 +8,7 @@ import { nowServing, serviceName, useSalonState, waitingTickets } from "@/lib/sa
 import { formatDuration } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
-  head: () => ({ meta: [{ title: "Lacquer Lane — Nail Salon Queue Management" }, { name: "description", content: "Choose a nail service, join the queue and track your wait." }] }),
+  head: () => ({ meta: [{ title: "The Nail Room — Nail Salon Queue Management" }, { name: "description", content: "Choose a nail service, join the queue and track your wait." }] }),
   component: Home,
 });
 

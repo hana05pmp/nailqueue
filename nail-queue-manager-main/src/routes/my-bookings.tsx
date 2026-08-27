@@ -15,13 +15,13 @@ import {
 export const Route = createFileRoute("/my-bookings")({
   head: () => ({
     meta: [
-      { title: "My Bookings — Lacquer Lane" },
+      { title: "My Bookings — The Nail Room" },
       {
         name: "description",
         content:
           "View and manage your upcoming and past nail salon appointments.",
       },
-      { property: "og:title", content: "My Bookings — Lacquer Lane" },
+      { property: "og:title", content: "My Bookings — The Nail Room" },
       {
         property: "og:description",
         content: "View and manage your nail salon appointments.",

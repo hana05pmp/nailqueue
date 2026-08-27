@@ -30,13 +30,13 @@ export const Route = createFileRoute("/booking")({
   validateSearch: searchSchema,
   head: () => ({
     meta: [
-      { title: "Book an Appointment — Lacquer Lane" },
+      { title: "Book an Appointment — The Nail Room" },
       {
         name: "description",
         content:
           "Book a nail salon appointment in advance. Choose your service, date and time slot.",
       },
-      { property: "og:title", content: "Book an Appointment — Lacquer Lane" },
+      { property: "og:title", content: "Book an Appointment — The Nail Room" },
       {
         property: "og:description",
         content: "Reserve a nail salon appointment at your preferred date and time.",
@@ -314,10 +314,10 @@ function BookingPage() {
                                 type="button"
                                 onClick={() => setSlot(s)}
                                 aria-pressed={selected}
-                                className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
+                                className={`rounded-lg border px-3 py-2 text-sm font-medium text-white transition-all shadow-sm ${
                                   selected
-                                    ? "border-primary bg-primary text-primary-foreground ring-2 ring-primary/20"
-                                    : "border-success/40 bg-success/10 text-success-foreground hover:bg-success/20"
+                                    ? "border-primary bg-primary shadow-primary/30 ring-2 ring-primary/30"
+                                    : "border-success bg-success shadow-success/20 hover:bg-success/90 hover:shadow-md"
                                 }`}
                               >
                                 {formatTime12h(s)}

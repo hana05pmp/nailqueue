@@ -25,7 +25,7 @@ function StaffLoginPage() {
     e.preventDefault();
     const ok = staffLogin(username, password);
     if (!ok) {
-      toast.error("Invalid staff login. Use the demo credentials shown below.");
+      toast.error("Invalid username or password.");
       return;
     }
     toast.success("Staff login successful");
@@ -47,11 +47,6 @@ function StaffLoginPage() {
                 <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
               </div>
               <Button className="w-full" size="lg" type="submit">Sign in</Button>
-              <div className="rounded-lg bg-secondary p-3 text-sm">
-                <p className="font-medium">Demo staff account</p>
-                <p className="text-muted-foreground">Username: <strong>staff</strong></p>
-                <p className="text-muted-foreground">Password: <strong>polish123</strong></p>
-              </div>
             </form>
           </CardContent>
         </Card>
