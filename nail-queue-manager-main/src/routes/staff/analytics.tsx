@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageShell } from "@/components/salon/PageShell";
 import { StaffGuard } from "@/components/salon/StaffGuard";
-import { useSalonState, serviceDuration } from "@/lib/salon/store";
+import { useSalonState } from "@/lib/salon/store";
 import { calculateMM1, calculateMMs, formatMetric, minutes } from "@/lib/salon/queueing";
 import { useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -24,46 +24,20 @@ function AnalyticsPage() {
     const periodHours = Math.max(0.25, Number(hours) || 3);
     const observedTickets = state.tickets.filter((t) => t.joinedAt > 0);
     const arrivalRate = observedTickets.length / periodHours;
-    const serviceTimes = completed
-      .filter((t) => t.startedAt && t.endedAt && t.endedAt > t.startedAt)
-      .map((t) => (t.endedAt! - t.startedAt!) / 60000);
-    const avgServiceMin = serviceTimes.length
-      ? serviceTimes.reduce((sum, value) => sum + value, 0) / serviceTimes.length
-      : state.services.length
-        ? state.services.reduce((sum, s) => sum + s.durationMin, 0) / state.services.length
-        : 30;
+    const serviceTimes = completed.filter((t) => t.startedAt && t.endedAt && t.endedAt > t.startedAt).map((t) => (t.endedAt! - t.startedAt!) / 60000);
+    const avgServiceMin = serviceTimes.length ? serviceTimes.reduce((sum, value) => sum + value, 0) / serviceTimes.length : state.services.length ? state.services.reduce((sum, s) => sum + s.durationMin, 0) / state.services.length : 30;
     const serviceRate = 60 / Math.max(0.1, avgServiceMin);
-    const metrics = model === "mm1"
-      ? calculateMM1(arrivalRate, serviceRate)
-      : calculateMMs(arrivalRate, serviceRate, servers);
-
-    const actualWaiting = completed
-      .filter((t) => t.startedAt && t.joinedAt && t.startedAt >= t.joinedAt)
-      .map((t) => (t.startedAt! - t.joinedAt) / 60000);
-    const actualService = completed
-      .filter((t) => t.startedAt && t.endedAt && t.endedAt >= t.startedAt)
-      .map((t) => (t.endedAt! - t.startedAt!) / 60000);
+    const metrics = model === "mm1" ? calculateMM1(arrivalRate, serviceRate) : calculateMMs(arrivalRate, serviceRate, servers);
+    const actualWaiting = completed.filter((t) => t.startedAt && t.joinedAt && t.startedAt >= t.joinedAt).map((t) => (t.startedAt! - t.joinedAt) / 60000);
+    const actualService = completed.filter((t) => t.startedAt && t.endedAt && t.endedAt >= t.startedAt).map((t) => (t.endedAt! - t.startedAt!) / 60000);
     const avg = (values: number[]) => values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
-
-    return {
-      arrivalRate,
-      serviceRate,
-      avgServiceMin,
-      metrics,
-      actualWaiting: avg(actualWaiting),
-      actualService: avg(actualService),
-      completionRate: state.tickets.length ? (completed.length / state.tickets.length) * 100 : 0,
-    };
+    return { arrivalRate, serviceRate, avgServiceMin, metrics, actualWaiting: avg(actualWaiting), actualService: avg(actualService), completionRate: state.tickets.length ? (completed.length / state.tickets.length) * 100 : 0 };
   }, [state.tickets, state.services, model, servers, hours, completed]);
 
   const { metrics } = analysis;
   const whatIf = [1, 2, 3].map((s) => {
     const m = calculateMMs(analysis.arrivalRate, analysis.serviceRate, s);
-    return {
-      servers: `${s} ${s === 1 ? "technician" : "technicians"}`,
-      utilization: Number.isFinite(m.utilization) ? Number((m.utilization * 100).toFixed(1)) : 100,
-      waiting: Number.isFinite(m.wqHours) ? Number(minutes(m.wqHours).toFixed(1)) : 999,
-    };
+    return { servers: `${s} ${s === 1 ? "technician" : "technicians"}`, utilization: Number.isFinite(m.utilization) ? Number((m.utilization * 100).toFixed(1)) : 100, waiting: Number.isFinite(m.wqHours) ? Number(minutes(m.wqHours).toFixed(1)) : 999 };
   });
 
   return <StaffGuard><PageShell title="Analytics" subtitle="Queue performance, service demand, and Queuing Theory analysis.">
@@ -77,7 +51,7 @@ function AnalyticsPage() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <label className="text-sm">Model<select className="mt-1 block w-full rounded-md border bg-background px-3 py-2" value={model} onChange={(e) => setModel(e.target.value as "mm1" | "mms")}><option value="mm1">M/M/1</option><option value="mms">M/M/s</option></select></label>
           <label className="text-sm">Analysis hours<input type="number" min="0.25" step="0.25" className="mt-1 block w-full rounded-md border bg-background px-3 py-2" value={hours} onChange={(e) => setHours(Number(e.target.value))} /></label>
-          <label className="text-sm">Technicians{s === undefined ? null : <span /> }<input type="number" min="1" max="20" className="mt-1 block w-full rounded-md border bg-background px-3 py-2" value={servers} disabled={model === "mm1"} onChange={(e) => setServers(Math.max(1, Number(e.target.value)))} /></label>
+          <label className="text-sm">Technicians<input type="number" min="1" max="20" className="mt-1 block w-full rounded-md border bg-background px-3 py-2" value={servers} disabled={model === "mm1"} onChange={(e) => setServers(Math.max(1, Number(e.target.value)))} /></label>
         </div>
       </div>
 
@@ -94,7 +68,7 @@ function AnalyticsPage() {
 
       <div className={`mt-6 rounded-lg border p-4 ${metrics.stable ? "" : "border-destructive"}`}>
         <p className="font-semibold">{metrics.stable ? "✓ Stable Queue" : "⚠ Unstable Queue"}</p>
-        <p className="mt-1 text-sm text-muted-foreground">{metrics.stable ? `Arrival rate is below system capacity (${formatMetric(metrics.capacity)} customers/hour).` : `Arrival rate is at or above system capacity. Add service capacity or reduce the arrival load.`}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{metrics.stable ? `Arrival rate is below system capacity (${formatMetric(metrics.capacity)} customers/hour).` : "Arrival rate is at or above system capacity. Add service capacity or reduce the arrival load."}</p>
       </div>
     </CardContent></Card>
 
