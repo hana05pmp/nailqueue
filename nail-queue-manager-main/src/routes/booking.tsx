@@ -367,7 +367,7 @@ function BookingPage() {
                           id="cust-name"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
-                          placeholder="e.g. Alex Morgan"
+                          
                           autoComplete="name"
                         />
                       </div>
