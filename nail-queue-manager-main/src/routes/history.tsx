@@ -24,10 +24,16 @@ function HistoryPage() {
     .sort((a, b) => (b.endedAt ?? b.joinedAt) - (a.endedAt ?? a.joinedAt));
 
   const calculatedFinishTimes = new Map<string, number>();
-  for (const ticket of state.tickets) {
-    if (ticket.status === "cancelled" || ticket.status === "skipped") continue;
-    const startTime = ticket.startedAt ?? ticket.joinedAt;
-    calculatedFinishTimes.set(ticket.id, startTime + serviceDuration(state, ticket.serviceId) * 60_000);
+  const orderedTickets = [...state.tickets]
+    .filter((t) => t.status !== "cancelled" && t.status !== "skipped")
+    .sort((a, b) => a.joinedAt - b.joinedAt || a.number - b.number);
+
+  for (const ticket of orderedTickets) {
+    const estimatedWaitMin = orderedTickets
+      .filter((other) => other.id !== ticket.id && other.joinedAt < ticket.joinedAt)
+      .reduce((total, other) => total + serviceDuration(state, other.serviceId), 0);
+    const serviceMin = serviceDuration(state, ticket.serviceId);
+    calculatedFinishTimes.set(ticket.id, ticket.joinedAt + (estimatedWaitMin + serviceMin) * 60_000);
   }
 
   return (
