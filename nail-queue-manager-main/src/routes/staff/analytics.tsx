@@ -29,20 +29,54 @@ function AnalyticsPage() {
 
   const analysis = useMemo(() => {
     const periodHours = Math.max(0.25, Number(hours) || 3);
-    const observedTickets = state.tickets.filter((t) => t.joinedAt > 0);
+    const periodStart = Date.now() - periodHours * 60 * 60 * 1000;
+
+    // Use only arrivals inside the selected observation window. This prevents
+    // old tickets from inflating the current arrival rate.
+    const observedTickets = state.tickets.filter(
+      (t) => t.joinedAt >= periodStart && t.joinedAt <= Date.now(),
+    );
     const arrivalRate = observedTickets.length / periodHours;
-    const completedServiceTimes = completed
+
+    // For service rate, use actual elapsed service time when start/end
+    // timestamps are available. Skipped/cancelled tickets are excluded.
+    const actualServiceTimes = observedTickets
+      .filter((t) => t.status === "completed" && t.startedAt && t.endedAt && t.endedAt > t.startedAt)
+      .map((t) => (t.endedAt! - t.startedAt!) / 60000)
+      .filter((value) => Number.isFinite(value) && value > 0);
+
+    const configuredServiceTimes = observedTickets
       .map((t) => state.services.find((s) => s.id === t.serviceId)?.durationMin)
       .filter((value): value is number => Number.isFinite(value) && value > 0);
-    const avgServiceMin = completedServiceTimes.length
-      ? completedServiceTimes.reduce((sum, value) => sum + value, 0) / completedServiceTimes.length
-      : state.services.length
-        ? state.services.reduce((sum, s) => sum + s.durationMin, 0) / state.services.length
-        : 30;
+
+    const fallbackServiceTimes = state.services
+      .filter((s) => s.active)
+      .map((s) => s.durationMin)
+      .filter((value) => Number.isFinite(value) && value > 0);
+
+    const serviceTimes = actualServiceTimes.length
+      ? actualServiceTimes
+      : configuredServiceTimes.length
+        ? configuredServiceTimes
+        : fallbackServiceTimes.length
+          ? fallbackServiceTimes
+          : [30];
+
+    const avgServiceMin = serviceTimes.reduce((sum, value) => sum + value, 0) / serviceTimes.length;
     const serviceRate = 60 / Math.max(0.1, avgServiceMin);
-    const metrics = model === "mm1" ? calculateMM1(arrivalRate, serviceRate) : calculateMMs(arrivalRate, serviceRate, servers);
-    return { arrivalRate, serviceRate, avgServiceMin, metrics };
-  }, [state.tickets, state.services, model, servers, hours, completed]);
+    const metrics = model === "mm1"
+      ? calculateMM1(arrivalRate, serviceRate)
+      : calculateMMs(arrivalRate, serviceRate, servers);
+
+    return {
+      arrivalRate,
+      serviceRate,
+      avgServiceMin,
+      observedCount: observedTickets.length,
+      actualServiceCount: actualServiceTimes.length,
+      metrics,
+    };
+  }, [state.tickets, state.services, model, servers, hours]);
 
   const { metrics } = analysis;
 
@@ -53,13 +87,15 @@ function AnalyticsPage() {
 
     <Card className="mt-6"><CardContent className="p-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div><h2 className="text-xl font-semibold">Queuing Theory Performance Analysis</h2><p className="mt-1 text-sm text-muted-foreground">Calculated from recorded queue activity and configured service durations.</p></div>
+        <div><h2 className="text-xl font-semibold">Queuing Theory Performance Analysis</h2><p className="mt-1 text-sm text-muted-foreground">Based on arrivals within the selected period and actual completed service times when available.</p></div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <label className="text-sm">Model<select className="mt-1 block w-full rounded-md border bg-background px-3 py-2" value={model} onChange={(e) => setModel(e.target.value as "mm1" | "mms")}><option value="mm1">M/M/1</option><option value="mms">M/M/s</option></select></label>
           <label className="text-sm">Analysis hours<input type="number" min="0.25" step="0.25" className="mt-1 block w-full rounded-md border bg-background px-3 py-2" value={hours} onChange={(e) => setHours(Number(e.target.value))} /></label>
           <label className="text-sm">Technicians<input type="number" min="1" max="20" className="mt-1 block w-full rounded-md border bg-background px-3 py-2" value={servers} disabled={model === "mm1"} onChange={(e) => setServers(Math.max(1, Number(e.target.value)))} /></label>
         </div>
       </div>
+
+      <p className="mt-4 text-xs text-muted-foreground">Observation window: {formatMetric(analysis.observedCount, 0)} arrivals · {analysis.actualServiceCount > 0 ? `${analysis.actualServiceCount} actual service times used` : "configured service times used until actual completions are available"}</p>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Metric title="Arrival Rate (λ)" value={`${formatMetric(analysis.arrivalRate)} cust/hr`} />
