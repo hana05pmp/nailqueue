@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Clock, ListOrdered, Sparkles, Users } from "lucide-react";
+import {  Clock, ListOrdered, Sparkles, Users } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatCard } from "@/components/salon/StatCard";
@@ -34,7 +34,7 @@ function Home() {
       </section>
 
       <section className="mx-auto w-full max-w-6xl px-4 py-14 sm:px-6">
-        <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-sm font-medium text-primary">Choose your treatment</p><h2 className="mt-1 text-2xl font-semibold sm:text-3xl">Popular services</h2><p className="mt-2 text-sm text-muted-foreground">Pick a service and join the queue with it already selected.</p></div><Link to="/services" className={buttonVariants({ variant: "ghost" })}>See all <ArrowRight className="ml-1 size-4" /></Link></div>
+        <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-sm font-medium text-primary">Choose your treatment</p><h2 className="mt-1 text-2xl font-semibold sm:text-3xl">Popular services</h2><p className="mt-2 text-sm text-muted-foreground">Pick a service and join the queue with it already selected.</p></div></div>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {services.slice(0, 6).map((svc) => <Card key={svc.id} className="border-border/70 shadow-soft"><CardContent className="p-6"><div className="flex items-start justify-between gap-3"><h3 className="text-lg font-semibold">{svc.name}</h3><span className="font-display font-semibold text-primary">{(svc.price * 1000).toLocaleString()} Ks</span></div><p className="mt-2 min-h-10 text-sm text-muted-foreground">{svc.description}</p><p className="mt-4 flex items-center gap-2 text-xs text-muted-foreground"><Clock className="size-3.5" /> {formatDuration(svc.durationMin)}</p><Link to="/join" search={{ service: svc.id }} className={buttonVariants({ className: "mt-4 w-full" })}>Choose this service</Link></CardContent></Card>)}
           {services.length === 0 && <Card className="sm:col-span-2 lg:col-span-3"><CardContent className="p-8 text-center text-sm text-muted-foreground">No services are currently available.</CardContent></Card>}
