@@ -8,23 +8,23 @@ import { staffLogout, useSalon } from "@/lib/salon/store";
 const customerLinks = [
   { to: "/", label: "Home" },
   { to: "/booking", label: "Booking" },
+  { to: "/my-bookings", label: "My Bookings" },
   { to: "/join", label: "Join Queue" },
   { to: "/my-queue", label: "My Queue" },
-  { to: "/my-bookings", label: "My Bookings" },
 ] as const;
 
 const staffLinks = [
+  { to: "/staff/dashboard", label: "Dashboard" },
   { to: "/staff/dashboard", label: "Queue" },
   { to: "/staff/services", label: "Services" },
   { to: "/staff/analytics", label: "Analytics" },
-  { to: "/history", label: "History" },
 ] as const;
 
 export function SiteHeader() {
   const loggedIn = useSalon((s) => s.staffLoggedIn);
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const links = [...customerLinks, ...(loggedIn ? staffLinks : [])];
+  const links = loggedIn ? staffLinks : customerLinks;
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur">
@@ -39,7 +39,7 @@ export function SiteHeader() {
         <nav className="hidden items-center gap-1 lg:flex">
           {links.map((l) => (
             <Link
-              key={l.to}
+              key={`${l.to}-${l.label}`}
               to={l.to}
               activeOptions={{ exact: l.to === "/" }}
               className="rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
@@ -79,7 +79,7 @@ export function SiteHeader() {
             <nav className="mt-8 flex flex-col gap-1">
               {links.map((l) => (
                 <Link
-                  key={l.to}
+                  key={`${l.to}-${l.label}`}
                   to={l.to}
                   onClick={() => setOpen(false)}
                   activeOptions={{ exact: l.to === "/" }}
