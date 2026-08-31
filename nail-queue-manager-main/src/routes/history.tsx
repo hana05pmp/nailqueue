@@ -18,15 +18,9 @@ export const Route = createFileRoute("/history")({
   head: () => ({
     meta: [
       { title: "Queue History — The Nail Room" },
-      {
-        name: "description",
-        content: "Review your completed and cancelled nail salon queue tickets.",
-      },
+      { name: "description", content: "Review your completed and cancelled nail salon queue tickets." },
       { property: "og:title", content: "Queue History — The Nail Room" },
-      {
-        property: "og:description",
-        content: "Every past ticket with service, status and timings.",
-      },
+      { property: "og:description", content: "Every past ticket with service, status and timings." },
     ],
   }),
   component: HistoryPage,
@@ -35,38 +29,29 @@ export const Route = createFileRoute("/history")({
 const fmt = (ts?: number) =>
   ts ? new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—";
 
-/**
- * Finished time is the result of total queue time plus service time:
- *   Finished = Joined + Queue Waiting Time + Service Duration
- *
- * Queue waiting time is derived from the actual service start timestamp.
- * Service duration comes from the selected service configuration.
- * The manual Complete button timestamp is not used to calculate the finish time.
- */
-const calculatedFinishedAt = (
-  joinedAt: number,
-  startedAt: number | undefined,
-  durationMin: number,
-  endedAt: number | undefined,
-  status: string,
-) => {
-  if (status === "cancelled") return endedAt;
-
-  const queueWaitingMs = startedAt
-    ? Math.max(0, startedAt - joinedAt)
-    : endedAt
-      ? Math.max(0, endedAt - joinedAt - durationMin * 60_000)
-      : 0;
-
-  const serviceTimeMs = durationMin * 60_000;
-  return joinedAt + queueWaitingMs + serviceTimeMs;
-};
-
 function HistoryPage() {
   const state = useSalonState();
+
   const rows = state.tickets
     .filter((t) => state.myTicketIds.includes(t.id) && !ACTIVE_STATUSES.includes(t.status))
     .sort((a, b) => (b.endedAt ?? b.joinedAt) - (a.endedAt ?? a.joinedAt));
+
+  // Calculate the scheduled finish for every ticket in queue order.
+  // A ticket cannot start until the previous ticket's service is finished.
+  // Therefore: finish = max(joined time, previous finish) + service duration.
+  // This makes ticket #132 wait for #131 instead of only adding its own service time.
+  const calculatedFinishTimes = new Map<string, number>();
+  const queueTickets = [...state.tickets]
+    .filter((t) => t.status !== "cancelled" && t.status !== "skipped")
+    .sort((a, b) => a.joinedAt - b.joinedAt || a.number - b.number);
+
+  let previousFinish = 0;
+  for (const ticket of queueTickets) {
+    const serviceStart = Math.max(ticket.joinedAt, previousFinish);
+    const finish = serviceStart + serviceDuration(state, ticket.serviceId) * 60_000;
+    calculatedFinishTimes.set(ticket.id, finish);
+    previousFinish = finish;
+  }
 
   return (
     <PageShell
@@ -82,9 +67,7 @@ function HistoryPage() {
         <Card className="border-dashed">
           <CardContent className="p-10 text-center">
             <h2 className="text-lg font-semibold">Nothing here yet</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Completed and cancelled tickets will appear here.
-            </p>
+            <p className="mt-2 text-sm text-muted-foreground">Completed and cancelled tickets will appear here.</p>
             <Button asChild className="mt-6">
               <Link to="/join">Join the queue</Link>
             </Button>
@@ -105,14 +88,9 @@ function HistoryPage() {
               </TableHeader>
               <TableBody>
                 {rows.map((t) => {
-                  const durationMin = serviceDuration(state, t.serviceId);
-                  const finishedAt = calculatedFinishedAt(
-                    t.joinedAt,
-                    t.startedAt,
-                    durationMin,
-                    t.endedAt,
-                    t.status,
-                  );
+                  const finishedAt = t.status === "cancelled"
+                    ? t.endedAt
+                    : calculatedFinishTimes.get(t.id);
 
                   return (
                     <TableRow key={t.id}>
