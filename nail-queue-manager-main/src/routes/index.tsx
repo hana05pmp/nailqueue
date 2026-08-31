@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Clock, ListOrdered, Sparkles, Users } from "lucide-react";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatCard } from "@/components/salon/StatCard";
 import { computeStats } from "@/lib/salon/stats";
@@ -29,7 +29,7 @@ function Home() {
             <p className="mt-4 max-w-lg text-base text-muted-foreground sm:text-lg">Choose your service, take a digital ticket and watch your place in line update live.</p>
             <div className="mt-8 flex flex-wrap gap-3"><Link to="/join" className={buttonVariants({ size: "lg" })}>Join the queue</Link></div>
           </div>
-          <Card className="border-border/60 shadow-soft"><CardContent className="p-6 sm:p-8"><p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Now serving</p><p className="font-display mt-2 text-6xl font-semibold">{serving ? `#${serving.number}` : "—"}</p><p className="mt-1 text-sm text-muted-foreground">{serving ? `${serving.customerName} · ${serviceName(state, serving.serviceId)}` : "No client in the chair right now"}</p><div className="mt-6 grid grid-cols-2 gap-4 border-t border-border/70 pt-6"><div><p className="text-xs text-muted-foreground">In line</p><p className="font-display text-2xl font-semibold">{waiting.length}</p></div><div><p className="text-xs text-muted-foreground">Avg. wait</p><p className="font-display text-2xl font-semibold">{formatDuration(stats.avgWaitMin)}</p></div></div></CardContent></Card>
+          <Card className="border-border/60 shadow-soft"><CardContent className="p-6 sm:p-8"><p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Now serving</p><p className="font-display mt-2 text-6xl font-semibold">{serving ? `#${serving.number}` : "—"}</p><p className="mt-1 text-sm text-muted-foreground">{serving ? `${serving.customerName} · ${serviceName(state, serving.serviceId)}` : "No client in the chair right now"}</p><div className="mt-6 border-t border-border/70 pt-6"><p className="text-xs text-muted-foreground">In line</p><p className="font-display text-2xl font-semibold">{waiting.length}</p></div></CardContent></Card>
         </div>
       </section>
 
