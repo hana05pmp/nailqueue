@@ -20,31 +20,28 @@ const fmt = (ts?: number) => ts ? new Date(ts).toLocaleTimeString([], { hour: "2
 
 function HistoryPage() {
   const state = useSalonState();
-
-  // Admin/staff history: show every finished record, not only the current user's tickets.
   const rows = state.tickets
     .filter((t) => !ACTIVE_STATUSES.includes(t.status))
     .sort((a, b) => (b.endedAt ?? b.joinedAt) - (a.endedAt ?? a.joinedAt));
 
-  const queueTickets = [...state.tickets]
-    .filter((t) => t.status !== "cancelled" && t.status !== "skipped")
-    .sort((a, b) => a.joinedAt - b.joinedAt || a.number - b.number);
+  // Use the actual service start time when it exists.
+  // If the customer started immediately, waiting time is 0, so finish is simply
+  // joined/start time + service duration. If they waited, startedAt already
+  // contains that waiting period, so it is included exactly once.
   const calculatedFinishTimes = new Map<string, number>();
-  let previousCalculatedFinish = 0;
-
-  for (const ticket of queueTickets) {
-    const durationMs = serviceDuration(state, ticket.serviceId) * 60_000;
-    const calculatedStart = ticket.startedAt
-      ? Math.max(ticket.startedAt, previousCalculatedFinish)
-      : Math.max(ticket.joinedAt, previousCalculatedFinish);
-    const finish = calculatedStart + durationMs;
-    calculatedFinishTimes.set(ticket.id, finish);
-    previousCalculatedFinish = finish;
+  for (const ticket of state.tickets) {
+    if (ticket.status === "cancelled" || ticket.status === "skipped") continue;
+    const startTime = ticket.startedAt ?? ticket.joinedAt;
+    calculatedFinishTimes.set(
+      ticket.id,
+      startTime + serviceDuration(state, ticket.serviceId) * 60_000,
+    );
   }
 
   const handleDelete = (ticketId: string, ticketNumber: number) => {
-    const confirmed = window.confirm(`Delete ticket #${ticketNumber} from history?`);
-    if (confirmed) removeTicket(ticketId);
+    if (window.confirm(`Delete ticket #${ticketNumber} from history?`)) {
+      removeTicket(ticketId);
+    }
   };
 
   return (
