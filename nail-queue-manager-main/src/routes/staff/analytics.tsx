@@ -42,31 +42,10 @@ function AnalyticsPage() {
         : 30;
     const serviceRate = 60 / Math.max(0.1, avgServiceMin);
     const metrics = model === "mm1" ? calculateMM1(arrivalRate, serviceRate) : calculateMMs(arrivalRate, serviceRate, servers);
-    const actualWaiting = completed
-      .filter((t) => t.startedAt && t.joinedAt && t.startedAt >= t.joinedAt)
-      .map((t) => (t.startedAt! - t.joinedAt) / 60000);
-    const actualService = completedServiceTimes;
-    const avg = (values: number[]) => values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
-    return {
-      arrivalRate,
-      serviceRate,
-      avgServiceMin,
-      metrics,
-      actualWaiting: avg(actualWaiting),
-      actualService: avg(actualService),
-      completionRate: state.tickets.length ? (completed.length / state.tickets.length) * 100 : 0,
-    };
+    return { arrivalRate, serviceRate, avgServiceMin, metrics };
   }, [state.tickets, state.services, model, servers, hours, completed]);
 
   const { metrics } = analysis;
-  const whatIf = [1, 2, 3].map((s) => {
-    const m = calculateMMs(analysis.arrivalRate, analysis.serviceRate, s);
-    return {
-      servers: `${s} ${s === 1 ? "technician" : "technicians"}`,
-      utilization: Number.isFinite(m.utilization) ? Number((m.utilization * 100).toFixed(1)) : 100,
-      waiting: Number.isFinite(m.wqHours) ? minutes(m.wqHours) : 999,
-    };
-  });
 
   return <StaffGuard><PageShell title="Analytics" subtitle="Queue performance, service demand, and Queuing Theory analysis.">
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -99,11 +78,6 @@ function AnalyticsPage() {
         <p className="mt-1 text-sm text-muted-foreground">{metrics.stable ? `Arrival rate is below system capacity (${formatMetric(metrics.capacity)} customers/hour).` : "Arrival rate is at or above system capacity. Add service capacity or reduce the arrival load."}</p>
       </div>
     </CardContent></Card>
-
-    <div className="mt-6 grid gap-6 lg:grid-cols-2">
-      <Card><CardContent className="p-6"><h2 className="text-lg font-semibold">Actual vs Theoretical Performance</h2><div className="mt-4 space-y-4 text-sm"><Row label="Actual average waiting time" value={formatWaitTime(analysis.actualWaiting)} /><Row label="Theoretical Wq" value={formatWaitTime(minutes(metrics.wqHours))} /><Row label="Actual average service time" value={formatWaitTime(analysis.actualService || analysis.avgServiceMin)} /><Row label="Completion rate" value={`${formatMetric(analysis.completionRate, 1)}%`} /></div></CardContent></Card>
-      <Card><CardContent className="p-6"><h2 className="text-lg font-semibold">What-If: Add Technicians</h2><div className="mt-4 overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b text-left"><th className="pb-2">Servers</th><th className="pb-2">Utilization</th><th className="pb-2">Wq</th></tr></thead><tbody>{whatIf.map((r) => <tr key={r.servers} className="border-b"><td className="py-2">{r.servers}</td><td className="py-2">{r.utilization}%</td><td className="py-2">{r.waiting >= 999 ? "∞" : formatWaitTime(r.waiting)}</td></tr>)}</tbody></table></div></CardContent></Card>
-    </div>
 
     <Card className="mt-6"><CardContent className="p-6"><h2 className="mb-4 text-lg font-semibold">Tickets by Service</h2><div className="h-[360px] w-full"><ResponsiveContainer width="100%" height="100%"><BarChart data={state.services.map((service) => ({ name: service.name, tickets: state.tickets.filter((t) => t.serviceId === service.id).length }))} margin={{ top: 10, right: 10, left: 0, bottom: 55 }}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" angle={-25} textAnchor="end" interval={0} /><YAxis allowDecimals={false} /><Tooltip /><Bar dataKey="tickets" name="Tickets" /></BarChart></ResponsiveContainer></div></CardContent></Card>
 
