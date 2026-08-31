@@ -17,16 +17,14 @@ const staffLinks = [
   { to: "/staff/dashboard", label: "Queue" },
   { to: "/staff/services", label: "Services" },
   { to: "/staff/analytics", label: "Analytics" },
+  { to: "/history", label: "History" },
 ] as const;
 
 export function SiteHeader() {
   const loggedIn = useSalon((s) => s.staffLoggedIn);
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const visibleCustomerLinks = loggedIn
-    ? customerLinks.filter((l) => l.to !== "/services")
-    : customerLinks;
-  const links = [...visibleCustomerLinks, ...(loggedIn ? staffLinks : [])];
+  const links = [...customerLinks, ...(loggedIn ? staffLinks : [])];
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur">
