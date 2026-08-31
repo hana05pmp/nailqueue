@@ -36,21 +36,27 @@ function HistoryPage() {
     .filter((t) => state.myTicketIds.includes(t.id) && !ACTIVE_STATUSES.includes(t.status))
     .sort((a, b) => (b.endedAt ?? b.joinedAt) - (a.endedAt ?? a.joinedAt));
 
-  // Calculate the scheduled finish for every ticket in queue order.
-  // A ticket cannot start until the previous ticket's service is finished.
-  // Therefore: finish = max(joined time, previous finish) + service duration.
-  // This makes ticket #132 wait for #131 instead of only adding its own service time.
-  const calculatedFinishTimes = new Map<string, number>();
+  // Calculate the expected finish for the queue in arrival order.
+  // Each customer's finish includes all service time scheduled before them.
+  // If a real startedAt exists, use it because it represents when their
+  // service actually began. Otherwise, calculate from the previous ticket.
+  // The manual Complete timestamp (endedAt) is never used for finish time.
   const queueTickets = [...state.tickets]
     .filter((t) => t.status !== "cancelled" && t.status !== "skipped")
     .sort((a, b) => a.joinedAt - b.joinedAt || a.number - b.number);
 
-  let previousFinish = 0;
+  const calculatedFinishTimes = new Map<string, number>();
+  let previousCalculatedFinish = 0;
+
   for (const ticket of queueTickets) {
-    const serviceStart = Math.max(ticket.joinedAt, previousFinish);
-    const finish = serviceStart + serviceDuration(state, ticket.serviceId) * 60_000;
-    calculatedFinishTimes.set(ticket.id, finish);
-    previousFinish = finish;
+    const durationMs = serviceDuration(state, ticket.serviceId) * 60_000;
+    const calculatedStart = ticket.startedAt
+      ? Math.max(ticket.startedAt, previousCalculatedFinish)
+      : Math.max(ticket.joinedAt, previousCalculatedFinish);
+    const calculatedFinish = calculatedStart + durationMs;
+
+    calculatedFinishTimes.set(ticket.id, calculatedFinish);
+    previousCalculatedFinish = calculatedFinish;
   }
 
   return (
