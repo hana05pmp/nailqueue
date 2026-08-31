@@ -35,6 +35,14 @@ export const Route = createFileRoute("/history")({
 const fmt = (ts?: number) =>
   ts ? new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—";
 
+/**
+ * Finished time is the result of total queue time plus service time:
+ *   Finished = Joined + Queue Waiting Time + Service Duration
+ *
+ * Queue waiting time is derived from the actual service start timestamp.
+ * Service duration comes from the selected service configuration.
+ * The manual Complete button timestamp is not used to calculate the finish time.
+ */
 const calculatedFinishedAt = (
   joinedAt: number,
   startedAt: number | undefined,
@@ -43,8 +51,15 @@ const calculatedFinishedAt = (
   status: string,
 ) => {
   if (status === "cancelled") return endedAt;
-  if (startedAt) return startedAt + durationMin * 60_000;
-  return endedAt ?? joinedAt + durationMin * 60_000;
+
+  const queueWaitingMs = startedAt
+    ? Math.max(0, startedAt - joinedAt)
+    : endedAt
+      ? Math.max(0, endedAt - joinedAt - durationMin * 60_000)
+      : 0;
+
+  const serviceTimeMs = durationMin * 60_000;
+  return joinedAt + queueWaitingMs + serviceTimeMs;
 };
 
 function HistoryPage() {
