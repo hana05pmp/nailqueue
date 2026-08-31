@@ -9,6 +9,14 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 
 export const Route = createFileRoute("/staff/analytics")({ component: AnalyticsPage });
 
+const formatWaitTime = (totalMinutes: number) => {
+  const rounded = Math.round(totalMinutes);
+  if (rounded < 60) return `${rounded} min`;
+  const hours = Math.floor(rounded / 60);
+  const mins = rounded % 60;
+  return mins === 0 ? `${hours} hr` : `${hours} hr ${mins} min`;
+};
+
 function AnalyticsPage() {
   const state = useSalonState();
   const [servers, setServers] = useState(1);
@@ -24,38 +32,21 @@ function AnalyticsPage() {
     const periodHours = Math.max(0.25, Number(hours) || 3);
     const observedTickets = state.tickets.filter((t) => t.joinedAt > 0);
     const arrivalRate = observedTickets.length / periodHours;
-
-    // Use the selected service's configured duration for theoretical service rate.
-    // Do not use endedAt - startedAt because endedAt is recorded when staff
-    // presses Complete and can therefore be later than the actual service duration.
     const completedServiceTimes = completed
       .map((t) => state.services.find((s) => s.id === t.serviceId)?.durationMin)
       .filter((value): value is number => Number.isFinite(value) && value > 0);
-
     const avgServiceMin = completedServiceTimes.length
       ? completedServiceTimes.reduce((sum, value) => sum + value, 0) / completedServiceTimes.length
       : state.services.length
         ? state.services.reduce((sum, s) => sum + s.durationMin, 0) / state.services.length
         : 30;
-
     const serviceRate = 60 / Math.max(0.1, avgServiceMin);
-    const metrics = model === "mm1"
-      ? calculateMM1(arrivalRate, serviceRate)
-      : calculateMMs(arrivalRate, serviceRate, servers);
-
-    // Actual queue waiting = actual service start - actual queue join.
-    // This is independent of the time staff presses Complete.
+    const metrics = model === "mm1" ? calculateMM1(arrivalRate, serviceRate) : calculateMMs(arrivalRate, serviceRate, servers);
     const actualWaiting = completed
       .filter((t) => t.startedAt && t.joinedAt && t.startedAt >= t.joinedAt)
       .map((t) => (t.startedAt! - t.joinedAt) / 60000);
-
-    // Actual service time is represented by the configured duration of the
-    // service, not endedAt - startedAt, because Complete is a manual action.
     const actualService = completedServiceTimes;
-
-    const avg = (values: number[]) =>
-      values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
-
+    const avg = (values: number[]) => values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
     return {
       arrivalRate,
       serviceRate,
@@ -73,7 +64,7 @@ function AnalyticsPage() {
     return {
       servers: `${s} ${s === 1 ? "technician" : "technicians"}`,
       utilization: Number.isFinite(m.utilization) ? Number((m.utilization * 100).toFixed(1)) : 100,
-      waiting: Number.isFinite(m.wqHours) ? Number(minutes(m.wqHours).toFixed(1)) : 999,
+      waiting: Number.isFinite(m.wqHours) ? minutes(m.wqHours) : 999,
     };
   });
 
@@ -99,8 +90,8 @@ function AnalyticsPage() {
         <Metric title="Capacity" value={`${formatMetric(metrics.capacity)} cust/hr`} />
         <Metric title="Lq — Avg. Queue" value={`${formatMetric(metrics.lq)} cust`} />
         <Metric title="L — Avg. System" value={`${formatMetric(metrics.l)} cust`} />
-        <Metric title="Wq — Avg. Waiting" value={`${formatMetric(minutes(metrics.wqHours), 1)} min`} />
-        <Metric title="W — Avg. System Time" value={`${formatMetric(minutes(metrics.wHours), 1)} min`} />
+        <Metric title="Wq — Avg. Waiting" value={formatWaitTime(minutes(metrics.wqHours))} />
+        <Metric title="W — Avg. System Time" value={formatWaitTime(minutes(metrics.wHours))} />
       </div>
 
       <div className={`mt-6 rounded-lg border p-4 ${metrics.stable ? "" : "border-destructive"}`}>
@@ -110,8 +101,8 @@ function AnalyticsPage() {
     </CardContent></Card>
 
     <div className="mt-6 grid gap-6 lg:grid-cols-2">
-      <Card><CardContent className="p-6"><h2 className="text-lg font-semibold">Actual vs Theoretical Performance</h2><div className="mt-4 space-y-4 text-sm"><Row label="Actual average waiting time" value={`${formatMetric(analysis.actualWaiting, 1)} min`} /><Row label="Theoretical Wq" value={`${formatMetric(minutes(metrics.wqHours), 1)} min`} /><Row label="Actual average service time" value={`${formatMetric(analysis.actualService || analysis.avgServiceMin, 1)} min`} /><Row label="Completion rate" value={`${formatMetric(analysis.completionRate, 1)}%`} /></div></CardContent></Card>
-      <Card><CardContent className="p-6"><h2 className="text-lg font-semibold">What-If: Add Technicians</h2><div className="mt-4 overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b text-left"><th className="pb-2">Servers</th><th className="pb-2">Utilization</th><th className="pb-2">Wq</th></tr></thead><tbody>{whatIf.map((r) => <tr key={r.servers} className="border-b"><td className="py-2">{r.servers}</td><td className="py-2">{r.utilization}%</td><td className="py-2">{r.waiting >= 999 ? "∞" : `${r.waiting} min`}</td></tr>)}</tbody></table></div></CardContent></Card>
+      <Card><CardContent className="p-6"><h2 className="text-lg font-semibold">Actual vs Theoretical Performance</h2><div className="mt-4 space-y-4 text-sm"><Row label="Actual average waiting time" value={formatWaitTime(analysis.actualWaiting)} /><Row label="Theoretical Wq" value={formatWaitTime(minutes(metrics.wqHours))} /><Row label="Actual average service time" value={formatWaitTime(analysis.actualService || analysis.avgServiceMin)} /><Row label="Completion rate" value={`${formatMetric(analysis.completionRate, 1)}%`} /></div></CardContent></Card>
+      <Card><CardContent className="p-6"><h2 className="text-lg font-semibold">What-If: Add Technicians</h2><div className="mt-4 overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b text-left"><th className="pb-2">Servers</th><th className="pb-2">Utilization</th><th className="pb-2">Wq</th></tr></thead><tbody>{whatIf.map((r) => <tr key={r.servers} className="border-b"><td className="py-2">{r.servers}</td><td className="py-2">{r.utilization}%</td><td className="py-2">{r.waiting >= 999 ? "∞" : formatWaitTime(r.waiting)}</td></tr>)}</tbody></table></div></CardContent></Card>
     </div>
 
     <Card className="mt-6"><CardContent className="p-6"><h2 className="mb-4 text-lg font-semibold">Tickets by Service</h2><div className="h-[360px] w-full"><ResponsiveContainer width="100%" height="100%"><BarChart data={state.services.map((service) => ({ name: service.name, tickets: state.tickets.filter((t) => t.serviceId === service.id).length }))} margin={{ top: 10, right: 10, left: 0, bottom: 55 }}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" angle={-25} textAnchor="end" interval={0} /><YAxis allowDecimals={false} /><Tooltip /><Bar dataKey="tickets" name="Tickets" /></BarChart></ResponsiveContainer></div></CardContent></Card>
