@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { PageShell } from "@/components/salon/PageShell";
 import { StatusBadge } from "@/components/salon/StatusBadge";
-import { serviceName, useSalonState } from "@/lib/salon/store";
+import { serviceDuration, serviceName, useSalonState } from "@/lib/salon/store";
 import { ACTIVE_STATUSES } from "@/lib/salon/types";
 
 export const Route = createFileRoute("/history")({
@@ -34,6 +34,30 @@ export const Route = createFileRoute("/history")({
 
 const fmt = (ts?: number) =>
   ts ? new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—";
+
+/**
+ * Calculate the service finish time from the actual service start time
+ * and the configured duration of the selected service.
+ *
+ * This intentionally does not use endedAt, because endedAt is recorded
+ * when staff presses Complete and therefore should not control the time
+ * shown to the customer.
+ */
+const calculatedFinishedAt = (
+  joinedAt: number,
+  startedAt: number | undefined,
+  durationMin: number,
+  endedAt: number | undefined,
+  status: string,
+) => {
+  if (status === "cancelled") return endedAt;
+  if (startedAt) return startedAt + durationMin * 60_000;
+
+  // Fallback for older completed tickets that do not have startedAt.
+  // Use the recorded end time only when there is no actual service-start
+  // timestamp available in the existing ticket data.
+  return endedAt ?? joinedAt + durationMin * 60_000;
+};
 
 function HistoryPage() {
   const state = useSalonState();
@@ -77,17 +101,28 @@ function HistoryPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rows.map((t) => (
-                  <TableRow key={t.id}>
-                    <TableCell className="font-medium">#{t.number}</TableCell>
-                    <TableCell>{serviceName(state, t.serviceId)}</TableCell>
-                    <TableCell>{fmt(t.joinedAt)}</TableCell>
-                    <TableCell>{fmt(t.endedAt)}</TableCell>
-                    <TableCell className="text-right">
-                      <StatusBadge status={t.status} />
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {rows.map((t) => {
+                  const durationMin = serviceDuration(state, t.serviceId);
+                  const finishedAt = calculatedFinishedAt(
+                    t.joinedAt,
+                    t.startedAt,
+                    durationMin,
+                    t.endedAt,
+                    t.status,
+                  );
+
+                  return (
+                    <TableRow key={t.id}>
+                      <TableCell className="font-medium">#{t.number}</TableCell>
+                      <TableCell>{serviceName(state, t.serviceId)}</TableCell>
+                      <TableCell>{fmt(t.joinedAt)}</TableCell>
+                      <TableCell>{fmt(finishedAt)}</TableCell>
+                      <TableCell className="text-right">
+                        <StatusBadge status={t.status} />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>
