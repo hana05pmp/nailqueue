@@ -25,7 +25,6 @@ function AnalyticsPage() {
 
   const completed = state.tickets.filter((t) => t.status === "completed");
   const active = state.tickets.filter((t) => ["waiting", "called", "serving"].includes(t.status));
-  const skipped = state.tickets.filter((t) => t.status === "skipped");
   const cancelled = state.tickets.filter((t) => t.status === "cancelled");
 
   const analysis = useMemo(() => {
@@ -48,8 +47,8 @@ function AnalyticsPage() {
   const { metrics } = analysis;
 
   return <StaffGuard><PageShell title="Analytics" subtitle="Queue performance, service demand, and Queuing Theory analysis.">
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {[['Completed', completed.length], ['Active', active.length], ['Skipped', skipped.length], ['Cancelled', cancelled.length]].map(([label, value]) => <Card key={String(label)}><CardContent className="p-6"><p className="text-sm text-muted-foreground">{label}</p><p className="font-display text-4xl font-semibold">{value}</p></CardContent></Card>)}
+    <div className="grid gap-4 sm:grid-cols-3">
+      {[['Completed', completed.length], ['Active', active.length], ['Cancelled', cancelled.length]].map(([label, value]) => <Card key={String(label)}><CardContent className="p-6"><p className="text-sm text-muted-foreground">{label}</p><p className="font-display text-4xl font-semibold">{value}</p></CardContent></Card>)}
     </div>
 
     <Card className="mt-6"><CardContent className="p-6">
