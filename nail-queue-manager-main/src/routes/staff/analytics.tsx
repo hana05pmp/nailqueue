@@ -24,20 +24,57 @@ function AnalyticsPage() {
     const periodHours = Math.max(0.25, Number(hours) || 3);
     const observedTickets = state.tickets.filter((t) => t.joinedAt > 0);
     const arrivalRate = observedTickets.length / periodHours;
-    const serviceTimes = completed.filter((t) => t.startedAt && t.endedAt && t.endedAt > t.startedAt).map((t) => (t.endedAt! - t.startedAt!) / 60000);
-    const avgServiceMin = serviceTimes.length ? serviceTimes.reduce((sum, value) => sum + value, 0) / serviceTimes.length : state.services.length ? state.services.reduce((sum, s) => sum + s.durationMin, 0) / state.services.length : 30;
+
+    // Use the selected service's configured duration for theoretical service rate.
+    // Do not use endedAt - startedAt because endedAt is recorded when staff
+    // presses Complete and can therefore be later than the actual service duration.
+    const completedServiceTimes = completed
+      .map((t) => state.services.find((s) => s.id === t.serviceId)?.durationMin)
+      .filter((value): value is number => Number.isFinite(value) && value > 0);
+
+    const avgServiceMin = completedServiceTimes.length
+      ? completedServiceTimes.reduce((sum, value) => sum + value, 0) / completedServiceTimes.length
+      : state.services.length
+        ? state.services.reduce((sum, s) => sum + s.durationMin, 0) / state.services.length
+        : 30;
+
     const serviceRate = 60 / Math.max(0.1, avgServiceMin);
-    const metrics = model === "mm1" ? calculateMM1(arrivalRate, serviceRate) : calculateMMs(arrivalRate, serviceRate, servers);
-    const actualWaiting = completed.filter((t) => t.startedAt && t.joinedAt && t.startedAt >= t.joinedAt).map((t) => (t.startedAt! - t.joinedAt) / 60000);
-    const actualService = completed.filter((t) => t.startedAt && t.endedAt && t.endedAt >= t.startedAt).map((t) => (t.endedAt! - t.startedAt!) / 60000);
-    const avg = (values: number[]) => values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
-    return { arrivalRate, serviceRate, avgServiceMin, metrics, actualWaiting: avg(actualWaiting), actualService: avg(actualService), completionRate: state.tickets.length ? (completed.length / state.tickets.length) * 100 : 0 };
+    const metrics = model === "mm1"
+      ? calculateMM1(arrivalRate, serviceRate)
+      : calculateMMs(arrivalRate, serviceRate, servers);
+
+    // Actual queue waiting = actual service start - actual queue join.
+    // This is independent of the time staff presses Complete.
+    const actualWaiting = completed
+      .filter((t) => t.startedAt && t.joinedAt && t.startedAt >= t.joinedAt)
+      .map((t) => (t.startedAt! - t.joinedAt) / 60000);
+
+    // Actual service time is represented by the configured duration of the
+    // service, not endedAt - startedAt, because Complete is a manual action.
+    const actualService = completedServiceTimes;
+
+    const avg = (values: number[]) =>
+      values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+
+    return {
+      arrivalRate,
+      serviceRate,
+      avgServiceMin,
+      metrics,
+      actualWaiting: avg(actualWaiting),
+      actualService: avg(actualService),
+      completionRate: state.tickets.length ? (completed.length / state.tickets.length) * 100 : 0,
+    };
   }, [state.tickets, state.services, model, servers, hours, completed]);
 
   const { metrics } = analysis;
   const whatIf = [1, 2, 3].map((s) => {
     const m = calculateMMs(analysis.arrivalRate, analysis.serviceRate, s);
-    return { servers: `${s} ${s === 1 ? "technician" : "technicians"}`, utilization: Number.isFinite(m.utilization) ? Number((m.utilization * 100).toFixed(1)) : 100, waiting: Number.isFinite(m.wqHours) ? Number(minutes(m.wqHours).toFixed(1)) : 999 };
+    return {
+      servers: `${s} ${s === 1 ? "technician" : "technicians"}`,
+      utilization: Number.isFinite(m.utilization) ? Number((m.utilization * 100).toFixed(1)) : 100,
+      waiting: Number.isFinite(m.wqHours) ? Number(minutes(m.wqHours).toFixed(1)) : 999,
+    };
   });
 
   return <StaffGuard><PageShell title="Analytics" subtitle="Queue performance, service demand, and Queuing Theory analysis.">
@@ -47,7 +84,7 @@ function AnalyticsPage() {
 
     <Card className="mt-6"><CardContent className="p-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div><h2 className="text-xl font-semibold">Queuing Theory Performance Analysis</h2><p className="mt-1 text-sm text-muted-foreground">Calculated from recorded queue activity and completed service times.</p></div>
+        <div><h2 className="text-xl font-semibold">Queuing Theory Performance Analysis</h2><p className="mt-1 text-sm text-muted-foreground">Calculated from recorded queue activity and configured service durations.</p></div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <label className="text-sm">Model<select className="mt-1 block w-full rounded-md border bg-background px-3 py-2" value={model} onChange={(e) => setModel(e.target.value as "mm1" | "mms")}><option value="mm1">M/M/1</option><option value="mms">M/M/s</option></select></label>
           <label className="text-sm">Analysis hours<input type="number" min="0.25" step="0.25" className="mt-1 block w-full rounded-md border bg-background px-3 py-2" value={hours} onChange={(e) => setHours(Number(e.target.value))} /></label>
