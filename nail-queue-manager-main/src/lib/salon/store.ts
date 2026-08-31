@@ -4,11 +4,11 @@ import type { Booking, BookingStatus, SalonState, Service, Ticket, TicketStatus 
 import { addMinutesToTime, generateTimeSlots, timeToMinutes, timesOverlap, SALON_HOURS } from "@/lib/utils";
 
 const STORAGE_KEY = "nail-salon-queue-v1";
+const HISTORY_RESET_KEY = "nail-salon-history-reset-v2";
 const serverState: SalonState = createSeedState(0);
 let state: SalonState = serverState;
 let hydrated = false;
 const listeners = new Set<() => void>();
-
 function emit() { listeners.forEach((l) => l()); }
 function persist() { if (typeof window === "undefined") return; try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch { /* ignore */ } }
 function hydrate() {
@@ -16,11 +16,21 @@ function hydrate() {
   hydrated = true;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
+    const historyWasReset = window.localStorage.getItem(HISTORY_RESET_KEY) === "done";
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<SalonState>;
       const base = createSeedState();
       state = { ...base, ...parsed, staffLoggedIn: false, bookings: parsed.bookings ?? base.bookings, bookingCounter: parsed.bookingCounter ?? base.bookingCounter, myBookingIds: parsed.myBookingIds ?? base.myBookingIds };
-    } else { state = createSeedState(); persist(); }
+      if (!historyWasReset) {
+        state = { ...state, tickets: [], counter: 0, myTicketIds: [] };
+        window.localStorage.setItem(HISTORY_RESET_KEY, "done");
+        persist();
+      }
+    } else {
+      state = createSeedState();
+      window.localStorage.setItem(HISTORY_RESET_KEY, "done");
+      persist();
+    }
   } catch { state = createSeedState(); }
   emit();
 }
@@ -29,7 +39,6 @@ function subscribe(listener: () => void) { hydrate(); listeners.add(listener); r
 export function useSalon<T>(selector: (s: SalonState) => T): T { return useSyncExternalStore(subscribe, () => selector(state), () => selector(serverState)); }
 export function useSalonState(): SalonState { return useSyncExternalStore(subscribe, () => state, () => serverState); }
 const uid = () => Math.random().toString(36).slice(2, 10);
-
 export function joinQueue(customerName: string, serviceId: string, walkIn = false): Ticket { const number = state.counter + 1; const ticket: Ticket = { id: uid(), number, customerName: customerName.trim(), serviceId, status: "waiting", walkIn, joinedAt: Date.now() }; setState((prev) => ({ ...prev, counter: number, tickets: [...prev.tickets, ticket], myTicketIds: walkIn ? prev.myTicketIds : [...prev.myTicketIds, ticket.id] })); return ticket; }
 export function cancelTicket(id: string) { updateTicket(id, { status: "cancelled", endedAt: Date.now() }); }
 function updateTicket(id: string, patch: Partial<Ticket>) { setState((prev) => ({ ...prev, tickets: prev.tickets.map((t) => t.id === id ? { ...t, ...patch } : t) })); }
@@ -37,16 +46,7 @@ export function callNext() { const next = state.tickets.filter((t) => t.status =
 export function startService(id: string) { updateTicket(id, { status: "serving", startedAt: Date.now() }); }
 export function completeService(id: string) { updateTicket(id, { status: "completed", endedAt: Date.now() }); }
 export function skipTicket(id: string) { updateTicket(id, { status: "skipped", endedAt: Date.now() }); }
-
-// Permanently remove a completed/cancelled/skipped ticket from queue history.
-export function removeTicket(id: string) {
-  setState((prev) => ({
-    ...prev,
-    tickets: prev.tickets.filter((t) => t.id !== id),
-    myTicketIds: prev.myTicketIds.filter((ticketId) => ticketId !== id),
-  }));
-}
-
+export function removeTicket(id: string) { setState((prev) => ({ ...prev, tickets: prev.tickets.filter((t) => t.id !== id), myTicketIds: prev.myTicketIds.filter((ticketId) => ticketId !== id) })); }
 export function saveService(service: Service) { setState((prev) => ({ ...prev, services: prev.services.some((s) => s.id === service.id) ? prev.services.map((s) => s.id === service.id ? service : s) : [...prev.services, service] })); }
 export function newServiceId() { return `svc-${uid()}`; }
 export function deleteService(id: string) { setState((prev) => ({ ...prev, services: prev.services.filter((s) => s.id !== id) })); }
