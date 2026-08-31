@@ -11,7 +11,6 @@ const customerLinks = [
   { to: "/join", label: "Join Queue" },
   { to: "/my-queue", label: "My Queue" },
   { to: "/my-bookings", label: "My Bookings" },
-  { to: "/history", label: "History" },
 ] as const;
 
 const staffLinks = [
