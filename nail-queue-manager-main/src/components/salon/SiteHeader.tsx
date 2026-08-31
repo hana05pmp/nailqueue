@@ -8,9 +8,9 @@ import { staffLogout, useSalon } from "@/lib/salon/store";
 const customerLinks = [
   { to: "/", label: "Home" },
   { to: "/booking", label: "Booking" },
+  { to: "/my-bookings", label: "My Bookings" },
   { to: "/join", label: "Join Queue" },
   { to: "/my-queue", label: "My Queue" },
-  { to: "/my-bookings", label: "My Bookings" },
 ] as const;
 
 const staffLinks = [
