@@ -35,28 +35,56 @@ export const Route = createFileRoute("/history")({
 const fmt = (ts?: number) =>
   ts ? new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—";
 
+const formatWait = (minutes: number) => {
+  if (minutes < 1) return "<1 min";
+  const rounded = Math.round(minutes);
+  if (rounded < 60) return `${rounded} min`;
+  const hours = Math.floor(rounded / 60);
+  const mins = rounded % 60;
+  return mins ? `${hours}h ${mins}m` : `${hours}h`;
+};
+
 /**
- * Calculate the service finish time from the actual service start time
- * and the configured duration of the selected service.
+ * Waiting time is the time spent in the queue before service actually starts.
+ * For completed tickets, the actual service start timestamp is used whenever
+ * available. Finished time is then calculated as:
  *
- * This intentionally does not use endedAt, because endedAt is recorded
- * when staff presses Complete and therefore should not control the time
- * shown to the customer.
+ * Joined + actual queue waiting time + service duration.
+ *
+ * This means the customer's waiting time is included in the finish calculation
+ * instead of relying on the time staff happens to press Complete.
  */
-const calculatedFinishedAt = (
+const calculatedTimes = (
   joinedAt: number,
   startedAt: number | undefined,
   durationMin: number,
   endedAt: number | undefined,
   status: string,
 ) => {
-  if (status === "cancelled") return endedAt;
-  if (startedAt) return startedAt + durationMin * 60_000;
+  if (status === "cancelled") {
+    return { waitingMin: 0, finishedAt: endedAt };
+  }
 
-  // Fallback for older completed tickets that do not have startedAt.
-  // Use the recorded end time only when there is no actual service-start
-  // timestamp available in the existing ticket data.
-  return endedAt ?? joinedAt + durationMin * 60_000;
+  if (startedAt) {
+    const waitingMin = Math.max(0, (startedAt - joinedAt) / 60_000);
+    const finishedAt = startedAt + durationMin * 60_000;
+    return { waitingMin, finishedAt };
+  }
+
+  // Fallback for older completed tickets without startedAt.
+  // Estimate the waiting period from the recorded end time minus the
+  // configured service duration, without using staff's Complete time as
+  // the primary calculation when actual start data exists.
+  if (endedAt) {
+    const calculatedStart = endedAt - durationMin * 60_000;
+    const waitingMin = Math.max(0, (calculatedStart - joinedAt) / 60_000);
+    return { waitingMin, finishedAt: endedAt };
+  }
+
+  return {
+    waitingMin: 0,
+    finishedAt: joinedAt + durationMin * 60_000,
+  };
 };
 
 function HistoryPage() {
@@ -96,6 +124,7 @@ function HistoryPage() {
                   <TableHead>Ticket</TableHead>
                   <TableHead>Service</TableHead>
                   <TableHead>Joined</TableHead>
+                  <TableHead>Waiting</TableHead>
                   <TableHead>Finished</TableHead>
                   <TableHead className="text-right">Status</TableHead>
                 </TableRow>
@@ -103,7 +132,7 @@ function HistoryPage() {
               <TableBody>
                 {rows.map((t) => {
                   const durationMin = serviceDuration(state, t.serviceId);
-                  const finishedAt = calculatedFinishedAt(
+                  const { waitingMin, finishedAt } = calculatedTimes(
                     t.joinedAt,
                     t.startedAt,
                     durationMin,
@@ -116,6 +145,7 @@ function HistoryPage() {
                       <TableCell className="font-medium">#{t.number}</TableCell>
                       <TableCell>{serviceName(state, t.serviceId)}</TableCell>
                       <TableCell>{fmt(t.joinedAt)}</TableCell>
+                      <TableCell>{formatWait(waitingMin)}</TableCell>
                       <TableCell>{fmt(finishedAt)}</TableCell>
                       <TableCell className="text-right">
                         <StatusBadge status={t.status} />
