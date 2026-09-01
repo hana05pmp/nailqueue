@@ -124,7 +124,7 @@ export function createSeedState(now = Date.now()): SalonState {
     {
       id: "seed-booking-1",
       bookingNumber: 5001,
-      customerName: "Ava Thompson",
+      customerName: "Ava",
       serviceId: "svc-gel-mani",
       serviceName: "Gel Manicure",
       date: todayStr,
@@ -137,7 +137,7 @@ export function createSeedState(now = Date.now()): SalonState {
     {
       id: "seed-booking-2",
       bookingNumber: 5002,
-      customerName: "Mia Patel",
+      customerName: "Mia",
       serviceId: "svc-pedicure",
       serviceName: "Spa Pedicure",
       date: todayStr,
@@ -151,7 +151,7 @@ export function createSeedState(now = Date.now()): SalonState {
     {
       id: "seed-booking-3",
       bookingNumber: 5003,
-      customerName: "Luna Garcia",
+      customerName: "Luna",
       serviceId: "svc-acrylic",
       serviceName: "Acrylic Full Set",
       date: tomorrowStr,
@@ -164,7 +164,7 @@ export function createSeedState(now = Date.now()): SalonState {
     {
       id: "seed-booking-4",
       bookingNumber: 5004,
-      customerName: "Nora Wright",
+      customerName: "Nora",
       serviceId: "svc-classic-mani",
       serviceName: "Classic Manicure",
       date: tomorrowStr,
